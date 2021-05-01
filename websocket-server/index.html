@@ -3,43 +3,108 @@
   <head>
     <title>Socket.IO chat</title>
     <style>
-      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-
-      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
-      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
-      #input:focus { outline: none; }
-      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
-
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages > li { padding: 0.5rem 1rem; }
-      #messages > li:nth-child(odd) { background: #efefef; }
+      body { margin: 0 };
     </style>
   </head>
   <body>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
-    </form>
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/png.js"></script>
     <script src="js/zlib/zlib.js"></script>
-    <script>
+    <script type = "module">
+      import * as THREE from 'https://unpkg.com/three@0.127.0/build/three.module.js';
+      import { ConvexGeometry } from 'https://unpkg.com/three@0.127.0/examples/jsm/geometries/ConvexGeometry.js';
+      import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/controls/OrbitControls.js';
+
+      function decodeDepthIntoPositionArray( png, zmin, zmax, zrange, p, positionArray ) {
+        const height = png.height;
+        const width = png.width;
+        const imageData = png.data;
+
+        for(let row = 0; row < height; row++) {
+          for(let col = 0; col < width; col++) {
+            let index = row * (width * 4) + col * 4;
+            let r = imageData[index] / 255.0;
+            let g = imageData[index + 1] / 255.0;
+            let b = imageData[index + 2] / 255.0;
+
+            let phaseRG = Math.atan((r - 0.5) / (g - 0.5));
+            let phaseB = b * 2 * Math.PI - Math.PI;
+            let K = Math.round((phaseB * zrange / p - phaseRG)/(2 * Math.PI));
+            let unwrappedPhase = phaseRG + 2 * Math.PI * K;
+
+            let z = -1 * ((unwrappedPhase * p) / (2 * Math.PI)) + ((zmin + zmax) / 2);
+
+            positionArray[(width * row + col) * 3 + 2] = z;
+          }
+        }
+      }
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      document.body.appendChild( renderer.domElement );
+      const controls = new OrbitControls( camera, renderer.domElement );
+
+      const planeGeometry = new THREE.PlaneBufferGeometry(480 / 575.815749569536, 640 / 575.815749569536, 479, 639);
+      //const material = new THREE.MeshBasicMaterial( { map: null, side: THREE.DoubleSide, color: 0xFFFFFF, wireframe: true } );
+      //const material = new THREE.MeshDepthMaterial( { color: 0xFFFFFF, wireframe: true } );
+
+      let temp_data = new Uint8Array(3 * 480 * 640);
+
+      //for(let i = 0; i < temp_data.length; i++) {
+      //  temp_data[i] = i % 255;
+      //}
+
+      let temp_texture = new THREE.DataTexture(temp_data, 480, 640, THREE.RGBFormat);
+      const material = new THREE.MeshBasicMaterial( { map: temp_texture, side: THREE.DoubleSide } );
+      const planeObject = new THREE.Mesh( planeGeometry, material );
+      scene.add(planeObject);
+
+      camera.position.z = 3.5;
+      controls.update();
+
+      function animate() {
+        requestAnimationFrame( animate );
+
+        renderer.render( scene, camera );
+      }
+
+      animate();
+
       var socket = io();
-      let count = 0;
       
       socket.on('achooResponse', (data) => {
-        count += 1
+        //console.log(data);
+        //console.log(data['encoded'].byteLength);
 
-        if(count % 50 == 0) {
-          console.log(count);
-        }
+        let zmin = parseFloat(data['zmin']);
+        let zmax = parseFloat(data['zmax']);
+        let zrange = zmax - zmin;
+        let p = parseFloat(data['p']);
 
-        console.log(data);
-        console.log(data['data'].byteLength);
-
-        PNG.decode(data['data'])
+        PNG.decode(data['encoded'])
           .then(png => {
-            console.log('Height ' + png.height + 'Width ' + png.width);
+            //console.log('Height ' + png.height + 'Width ' + png.width);
+            let position = planeGeometry.getAttribute('position');
+            let positionArray = position.array;
+
+            decodeDepthIntoPositionArray( png, zmin, zmax, zrange, p, positionArray );
+            planeGeometry.setAttribute('position', position);
+            
+            PNG.decode(data['texture'])
+              .then(data => {
+                console.log(data);
+                let texture = new THREE.DataTexture( data['data'], 480, 640, THREE.RGBAFormat );
+                texture.flipY = true;
+
+                console.log(texture);
+                material.setValues( { map: texture } );
+                
+                position.needsUpdate = true;
+                material.needsUpdate = true;
+              })
         })
       });
     </script>

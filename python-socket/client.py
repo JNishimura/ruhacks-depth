@@ -65,12 +65,25 @@ class DepthStreamer:
                 depth = cv2.flip(depth, 1)
                 rgb = cv2.flip(rgb, 1)
 
+            rgb_saved = BytesIO()
+            Image.fromarray(rgb, 'RGB').save(rgb_saved, format="png")
             rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-            encoded = self.encodeMWD(depth)
-            temp = BytesIO()
-            Image.fromarray(encoded, 'RGB').save(temp, format="png")
 
-            self.sio.emit('achoo', {'encoded': temp.getvalue()})
+            encoded = self.encodeMWD(depth)
+            encoded_saved = BytesIO()
+            Image.fromarray(encoded, 'RGB').save(encoded_saved, format="png")
+
+            NUM_STEPS = 6
+            zmax = np.nanmax(depth)
+            zmin = np.nanmin(depth)
+            zrange = zmax - zmin
+            p = zrange / NUM_STEPS
+
+            self.sio.emit('achoo', {'encoded': encoded_saved.getvalue(),
+                                    'texture': rgb_saved.getvalue(),
+                                    'zmin': str(zmin),
+                                    'zmax': str(zmax),
+                                    'p': str(p)})
 
             # Show the RGBD Stream
             cv2.imshow('RGB', rgb)
@@ -80,11 +93,13 @@ class DepthStreamer:
             self.event.clear()
     
     def encodeMWD(self, depth):
-        NUM_STEPS = 6
+        NUM_STEPS = 2
         zmax = np.nanmax(depth)
         zmin = np.nanmin(depth)
         zrange = zmax - zmin
         p = zrange / NUM_STEPS
+
+        depth = depth - (np.ones(np.shape(depth)) * (zmin + zmax) / 2)
 
         i_r = np.copy(depth)
         i_g = np.copy(depth)

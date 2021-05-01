@@ -12,7 +12,7 @@ io.on('connection', (socket) => {
 
   socket.on('achoo', (data) => {
     console.log(data);
-    socket.broadcast.emit('achooResponse', {data: data['encoded'], message: 'hi'});
+    socket.broadcast.emit('achooResponse', data);
   });
   
   socket.on('disconnect', () => {
