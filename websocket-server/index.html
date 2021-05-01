@@ -21,11 +21,26 @@
       <input id="input" autocomplete="off" /><button>Send</button>
     </form>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="js/png.js"></script>
+    <script src="js/zlib/zlib.js"></script>
     <script>
       var socket = io();
+      let count = 0;
       
       socket.on('achooResponse', (data) => {
-        console.log(data.length);
+        count += 1
+
+        if(count % 50 == 0) {
+          console.log(count);
+        }
+
+        console.log(data);
+        console.log(data['data'].byteLength);
+
+        PNG.decode(data['data'])
+          .then(png => {
+            console.log('Height ' + png.height + 'Width ' + png.width);
+        })
       });
     </script>
   </body>

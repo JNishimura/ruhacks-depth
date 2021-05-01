@@ -5,6 +5,10 @@ from threading import Event
 
 import socketio
 import time
+from PIL import Image
+
+from io import BytesIO
+import sys
 
 
 class DepthStreamer:
@@ -27,7 +31,7 @@ class DepthStreamer:
     def on_stream_stopped(self):
         self.sio.disconnect()
         print('Stream stopped')
-        exit()
+        quit()
 
     def connect_to_device(self, dev_idx):
         print('Searching for devices')
@@ -62,8 +66,11 @@ class DepthStreamer:
                 rgb = cv2.flip(rgb, 1)
 
             rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+            encoded = self.encodeMWD(depth)
+            temp = BytesIO()
+            Image.fromarray(encoded, 'RGB').save(temp, format="png")
 
-            self.sio.emit('achoo', {'message': 'achoo!'})
+            self.sio.emit('achoo', {'encoded': temp.getvalue()})
 
             # Show the RGBD Stream
             cv2.imshow('RGB', rgb)
@@ -71,6 +78,28 @@ class DepthStreamer:
             cv2.waitKey(1)
 
             self.event.clear()
+    
+    def encodeMWD(self, depth):
+        NUM_STEPS = 6
+        zmax = np.nanmax(depth)
+        zmin = np.nanmin(depth)
+        zrange = zmax - zmin
+        p = zrange / NUM_STEPS
+
+        i_r = np.copy(depth)
+        i_g = np.copy(depth)
+        i_b = np.copy(depth)
+
+        i_r[~np.isnan(i_r)] = 0.5 + 0.5 * np.sin(2 * np.pi * i_r[~np.isnan(i_r)] / p)
+        i_g[~np.isnan(i_g)] = 0.5 + 0.5 * np.cos(2 * np.pi * i_g[~np.isnan(i_g)] / p)
+        i_b[~np.isnan(i_b)] = (i_b[~np.isnan(i_b)] - zmin) / zrange
+
+        encoded_rgb = np.stack([i_r, i_g, i_b], axis = -1)
+
+        encoded_rgb *= 255
+        encoded_rgb = encoded_rgb.astype(np.uint8)
+
+        return encoded_rgb
     
 if __name__ == '__main__':
     app = DepthStreamer()
