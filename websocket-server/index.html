@@ -53,10 +53,6 @@
 
       let temp_data = new Uint8Array(3 * 480 * 640);
 
-      //for(let i = 0; i < temp_data.length; i++) {
-      //  temp_data[i] = i % 255;
-      //}
-
       let temp_texture = new THREE.DataTexture(temp_data, 480, 640, THREE.RGBFormat);
       const material = new THREE.MeshBasicMaterial( { map: temp_texture, side: THREE.DoubleSide } );
       const planeObject = new THREE.Mesh( planeGeometry, material );
@@ -95,11 +91,8 @@
             
             PNG.decode(data['texture'])
               .then(data => {
-                console.log(data);
                 let texture = new THREE.DataTexture( data['data'], 480, 640, THREE.RGBAFormat );
                 texture.flipY = true;
-
-                console.log(texture);
                 material.setValues( { map: texture } );
                 
                 position.needsUpdate = true;

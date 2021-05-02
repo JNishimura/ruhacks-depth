@@ -69,7 +69,9 @@ class DepthStreamer:
             Image.fromarray(rgb, 'RGB').save(rgb_saved, format="png")
             rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 
-            encoded = self.encodeMWD(depth)
+            filled_depth = self.fillInDepthNan(depth)
+
+            encoded = self.encodeMWD(filled_depth)
             encoded_saved = BytesIO()
             Image.fromarray(encoded, 'RGB').save(encoded_saved, format="png")
 
@@ -115,6 +117,13 @@ class DepthStreamer:
         encoded_rgb = encoded_rgb.astype(np.uint8)
 
         return encoded_rgb
+
+    def fillInDepthNan(self, depth):
+        mask = np.isnan(depth)
+        idx = np.where(~mask,np.arange(mask.shape[1]),0)
+        np.maximum.accumulate(idx,axis=1, out=idx)
+        out = depth[np.arange(idx.shape[0])[:,None], idx]
+        return out
     
 if __name__ == '__main__':
     app = DepthStreamer()
