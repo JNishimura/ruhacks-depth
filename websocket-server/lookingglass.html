@@ -10,8 +10,10 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/png.js"></script>
     <script src="js/zlib/zlib.js"></script>
+    <script src="node_modules/three/build/three.js"></script>
+    <script src="node_modules/holoplay/dist/holoplay.js"></script>
     <script type = "module">
-      import * as THREE from 'https://unpkg.com/three@0.127.0/build/three.module.js';
+      //import * as THREE from 'https://unpkg.com/three@0.127.0/build/three.module.js';
       import { ConvexGeometry } from 'https://unpkg.com/three@0.127.0/examples/jsm/geometries/ConvexGeometry.js';
       import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/controls/OrbitControls.js';
 
@@ -40,41 +42,45 @@
       }
 
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+      //const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+      const camera = new HoloPlay.Camera();
 
-      const renderer = new THREE.WebGLRenderer();
-      renderer.setSize( window.innerWidth, window.innerHeight );
+      //const renderer = new THREE.WebGLRenderer();
+      const renderer = new HoloPlay.Renderer();
+      //renderer.setSize( window.innerWidth, window.innerHeight );
       document.body.appendChild( renderer.domElement );
       const controls = new OrbitControls( camera, renderer.domElement );
 
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 10);
+      directionalLight.position.set(0, 1, 2);
+      scene.add(directionalLight);
+  
+      const ambientLight = new THREE.AmbientLight(0xFF0000, 10);
+      scene.add(ambientLight);
+
       const planeGeometry = new THREE.PlaneBufferGeometry(480 / 575.815749569536, 640 / 575.815749569536, 479, 639);
-      //const material = new THREE.MeshBasicMaterial( { map: null, side: THREE.DoubleSide, color: 0xFFFFFF, wireframe: true } );
+      const material = new THREE.MeshBasicMaterial( { map: null, side: THREE.DoubleSide, color: 0xFFFFFF, wireframe: true } );
       //const material = new THREE.MeshDepthMaterial( { color: 0xFFFFFF, wireframe: true } );
 
-      let temp_data = new Uint8Array(3 * 480 * 640);
-
-      let temp_texture = new THREE.DataTexture(temp_data, 480, 640, THREE.RGBFormat);
-      const material = new THREE.MeshBasicMaterial( { map: temp_texture, side: THREE.DoubleSide } );
+      //let temp_data = new Uint8Array(3 * 480 * 640);
+      //let temp_texture = new THREE.DataTexture(temp_data, 480, 640, THREE.RGBFormat);
+      //const material = new THREE.MeshBasicMaterial( { map: temp_texture, side: THREE.DoubleSide } );
       const planeObject = new THREE.Mesh( planeGeometry, material );
       scene.add(planeObject);
 
-      camera.position.z = 3.5;
+      camera.position.z = 7.5;
       controls.update();
 
-      function animate() {
-        requestAnimationFrame( animate );
-
-        renderer.render( scene, camera );
+      function update(time) {
+          requestAnimationFrame(update);
+          renderer.render( scene, camera );
       }
 
-      animate();
+      requestAnimationFrame(update);
 
       var socket = io();
       
       socket.on('achooResponse', (data) => {
-        //console.log(data);
-        //console.log(data['encoded'].byteLength);
-
         let zmin = parseFloat(data['zmin']);
         let zmax = parseFloat(data['zmax']);
         let zrange = zmax - zmin;
@@ -82,22 +88,23 @@
 
         PNG.decode(data['encoded'])
           .then(png => {
-            //console.log('Height ' + png.height + 'Width ' + png.width);
             let position = planeGeometry.getAttribute('position');
             let positionArray = position.array;
 
             decodeDepthIntoPositionArray( png, zmin, zmax, zrange, p, positionArray );
-            planeGeometry.setAttribute('position', position);
+            planeGeometry.addAttribute('position', position);
+            position.needsUpdate = true;
             
+            /*
             PNG.decode(data['texture'])
               .then(data => {
                 let texture = new THREE.DataTexture( data['data'], 480, 640, THREE.RGBAFormat );
                 texture.flipY = true;
                 material.setValues( { map: texture } );
                 
-                position.needsUpdate = true;
                 material.needsUpdate = true;
-              })
+            })
+            */
         })
       });
     </script>

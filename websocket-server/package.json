@@ -4,6 +4,7 @@
   "description": "server for streaming depth",
   "dependencies": {
     "express": "^4.17.1",
+    "holoplay": "^1.0.3",
     "socket.io": "^4.0.1"
   }
 }
