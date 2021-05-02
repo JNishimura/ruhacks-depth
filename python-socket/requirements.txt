@@ -1,2 +1,5 @@
 record3d
 Pillow
+socket.io
+numpy
+cv2

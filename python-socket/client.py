@@ -75,7 +75,7 @@ class DepthStreamer:
             encoded_saved = BytesIO()
             Image.fromarray(encoded, 'RGB').save(encoded_saved, format="png")
 
-            NUM_STEPS = 6
+            NUM_STEPS = 2
             zmax = np.nanmax(depth)
             zmin = np.nanmin(depth)
             zrange = zmax - zmin

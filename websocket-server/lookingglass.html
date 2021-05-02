@@ -13,7 +13,6 @@
     <script src="node_modules/three/build/three.js"></script>
     <script src="node_modules/holoplay/dist/holoplay.js"></script>
     <script type = "module">
-      //import * as THREE from 'https://unpkg.com/three@0.127.0/build/three.module.js';
       import { ConvexGeometry } from 'https://unpkg.com/three@0.127.0/examples/jsm/geometries/ConvexGeometry.js';
       import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/controls/OrbitControls.js';
 
@@ -42,12 +41,9 @@
       }
 
       const scene = new THREE.Scene();
-      //const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
       const camera = new HoloPlay.Camera();
 
-      //const renderer = new THREE.WebGLRenderer();
       const renderer = new HoloPlay.Renderer();
-      //renderer.setSize( window.innerWidth, window.innerHeight );
       document.body.appendChild( renderer.domElement );
       const controls = new OrbitControls( camera, renderer.domElement );
 
@@ -58,8 +54,9 @@
       const ambientLight = new THREE.AmbientLight(0xFF0000, 10);
       scene.add(ambientLight);
 
-      const planeGeometry = new THREE.PlaneBufferGeometry(480 / 575.815749569536, 640 / 575.815749569536, 479, 639);
-      const material = new THREE.MeshBasicMaterial( { map: null, side: THREE.DoubleSide, color: 0xFFFFFF, wireframe: true } );
+      //const planeGeometry = new THREE.PlaneBufferGeometry(480 / 575.815749569536, 640 / 575.815749569536, 479, 639);
+      const planeGeometry = new THREE.PlaneBufferGeometry(640 / 575.815749569536, 480 / 575.815749569536, 639, 479);
+      const material = new THREE.MeshBasicMaterial( { map: null, side: THREE.DoubleSide, color: 0xA0F78B, wireframe: true } );
       //const material = new THREE.MeshDepthMaterial( { color: 0xFFFFFF, wireframe: true } );
 
       //let temp_data = new Uint8Array(3 * 480 * 640);

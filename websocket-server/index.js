@@ -11,7 +11,7 @@ io.on('connection', (socket) => {
   console.log('a user connected');
 
   socket.on('achoo', (data) => {
-    console.log(data);
+    //console.log(data);
     socket.broadcast.emit('achooResponse', data);
   });
   
